@@ -66,6 +66,8 @@ These are non-negotiable constraints. Violating them breaks the package's design
 8. **Column validation before plotting** — raise `ValueError` with available columns before creating any matplotlib figure
 9. **No print statements** — use `warnings.warn()` for non-fatal issues
 10. **Full type hints** on all public and private functions; use modern syntax (`X | None`, `list[str]`)
+11. **No __future__ imports**
+12. **ALL IMPORTS AT THE TOP OF FILE** 
 
 ## Python Version
 

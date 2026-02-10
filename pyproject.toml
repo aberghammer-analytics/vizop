@@ -1,0 +1,39 @@
+[project]
+name = "vizop"
+version = "0.1.0"
+description = "Opinionated Python data visualization. Publication-quality charts with minimal config."
+readme = "README.md"
+authors = [
+    { name = "Anthony Berghammer", email = "aberghammer.analytics@gmail.com" }
+]
+requires-python = ">=3.10"
+dependencies = [
+    "matplotlib",
+    "pydantic",
+    "numpy",
+    "pandas",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "ruff",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B", "SIM", "TCH"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
