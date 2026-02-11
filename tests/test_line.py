@@ -241,6 +241,70 @@ class TestHighlight:
 # ---------------------------------------------------------------------------
 
 
+# ---------------------------------------------------------------------------
+# Color map
+# ---------------------------------------------------------------------------
+
+
+class TestColorMap:
+    def test_basic_mapping(self, long_df):
+        chart = line(
+            long_df, x="year", y="value", group="country",
+            color_map={"US": "#ff0000", "UK": "#0000ff"},
+        )
+        ax = chart.fig.axes[0]
+        line_colors = {}
+        for ln in ax.lines:
+            line_colors[ln.get_label()] = matplotlib.colors.to_hex(ln.get_color())
+        assert line_colors["US"] == "#ff0000"
+        assert line_colors["UK"] == "#0000ff"
+
+    def test_unmapped_series_get_gray(self, wide_df):
+        chart = line(
+            wide_df, x="year", y=["gdp", "inflation", "unemployment"],
+            color_map={"gdp": "#ff0000"},
+        )
+        ax = chart.fig.axes[0]
+        line_colors = {}
+        for ln in ax.lines:
+            line_colors[ln.get_label()] = matplotlib.colors.to_hex(ln.get_color())
+        assert line_colors["gdp"] == "#ff0000"
+        assert line_colors["inflation"] == HIGHLIGHT_MUTED_COLOR.lower()
+        assert line_colors["unemployment"] == HIGHLIGHT_MUTED_COLOR.lower()
+
+    def test_color_map_with_highlight(self, long_df):
+        chart = line(
+            long_df, x="year", y="value", group="country",
+            color_map={"US": "#ff0000", "UK": "#0000ff"},
+            highlight="US",
+        )
+        ax = chart.fig.axes[0]
+        for ln in ax.lines:
+            color = matplotlib.colors.to_hex(ln.get_color())
+            if ln.get_label() == "US":
+                assert color == "#ff0000"
+                assert ln.get_linewidth() == pytest.approx(2.5)
+            else:
+                assert color == "#0000ff"
+                assert ln.get_linewidth() == pytest.approx(1.0)
+
+    def test_warning_on_unknown_keys(self, long_df):
+        with pytest.warns(UserWarning, match="color_map contains keys not found"):
+            line(
+                long_df, x="year", y="value", group="country",
+                color_map={"US": "#ff0000", "Mars": "#00ff00"},
+            )
+
+    def test_single_series_color_map_overrides_accent(self, single_df):
+        chart = line(
+            single_df, x="year", y="gdp",
+            accent_color="#999999", color_map={"gdp": "#ff0000"},
+        )
+        ax = chart.fig.axes[0]
+        color = matplotlib.colors.to_hex(ax.lines[0].get_color())
+        assert color == "#ff0000"
+
+
 class TestHighlightRange:
     def test_axvspan_created(self, single_df):
         chart = line(single_df, x="year", y="gdp", highlight_range=(2021, 2022))
@@ -295,8 +359,13 @@ class TestThemeIntegration:
         assert not ax.spines["top"].get_visible()
         assert not ax.spines["right"].get_visible()
 
-    def test_horizontal_gridlines(self, single_df):
+    def test_gridlines_off_by_default(self, single_df):
         chart = line(single_df, x="year", y="gdp")
+        ax = chart.fig.axes[0]
+        assert not ax.yaxis.get_gridlines()[0].get_visible()
+
+    def test_gridlines_on(self, single_df):
+        chart = line(single_df, x="year", y="gdp", gridlines=True)
         ax = chart.fig.axes[0]
         assert ax.yaxis.get_gridlines()[0].get_visible()
 

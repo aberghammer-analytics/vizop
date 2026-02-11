@@ -83,16 +83,16 @@ class TestApplyTheme:
         assert left_title.get_text() == "Test Title"
         plt.close(fig)
 
-    def test_horizontal_gridlines_only(self):
+    def test_gridlines_off_by_default(self):
         fig, ax = plt.subplots()
         ax.plot([1, 2], [1, 2])
-        apply_theme(fig, ax, gridlines="horizontal")
-        # y-axis grid should be on, x-axis should be off
-        assert ax.yaxis.get_gridlines()[0].get_visible()
+        apply_theme(fig, ax)
+        assert not ax.yaxis.get_gridlines()[0].get_visible()
+        plt.close(fig)
 
-    def test_both_gridlines(self):
+    def test_gridlines_on(self):
         fig, ax = plt.subplots()
         ax.plot([1, 2], [1, 2])
-        apply_theme(fig, ax, gridlines="both")
+        apply_theme(fig, ax, gridlines=True)
         assert ax.yaxis.get_gridlines()[0].get_visible()
-        assert ax.xaxis.get_gridlines()[0].get_visible()
+        plt.close(fig)

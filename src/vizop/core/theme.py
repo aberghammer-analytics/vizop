@@ -4,11 +4,14 @@ These are internal constants — not user-facing. Users control appearance
 via VizopConfig; this module translates config into matplotlib properties.
 """
 
-from typing import Literal
+from typing import TYPE_CHECKING
 
-from matplotlib.axes import Axes
-from matplotlib.figure import Figure
+from matplotlib.ticker import MaxNLocator
 from pydantic import BaseModel
+
+if TYPE_CHECKING:
+    from matplotlib.axes import Axes
+    from matplotlib.figure import Figure
 
 from vizop.core.config import VizopConfig, get_config
 from vizop.core.fonts import get_font_family, register_fonts
@@ -80,7 +83,7 @@ def apply_theme(
     subtitle: str | None = None,
     source: str | None = None,
     note: str | None = None,
-    gridlines: Literal["horizontal", "both", "none"] = "horizontal",
+    gridlines: bool = False,
 ) -> None:
     """Apply vizop's opinionated theme to a matplotlib figure and axes.
 
@@ -109,7 +112,7 @@ def apply_theme(
     ax.spines["bottom"].set_linewidth(LAYOUT.spine_linewidth)
 
     # --- Gridlines ---
-    if gridlines == "horizontal":
+    if gridlines:
         ax.yaxis.grid(
             True,
             color=LAYOUT.gridline_color,
@@ -117,24 +120,14 @@ def apply_theme(
             linewidth=LAYOUT.gridline_linewidth,
         )
         ax.xaxis.grid(False)
-    elif gridlines == "both":
-        ax.yaxis.grid(
-            True,
-            color=LAYOUT.gridline_color,
-            alpha=LAYOUT.gridline_alpha,
-            linewidth=LAYOUT.gridline_linewidth,
-        )
-        ax.xaxis.grid(
-            True,
-            color=LAYOUT.gridline_color,
-            alpha=LAYOUT.gridline_alpha,
-            linewidth=LAYOUT.gridline_linewidth,
-        )
     else:
         ax.yaxis.grid(False)
         ax.xaxis.grid(False)
 
     ax.set_axisbelow(True)
+
+    # --- Y-axis: fewer ticks ---
+    ax.yaxis.set_major_locator(MaxNLocator(nbins=5))
 
     # --- Tick styling ---
     ax.tick_params(
@@ -148,6 +141,7 @@ def apply_theme(
 
     # --- Title (left-aligned) ---
     if title:
+        title_pad = LAYOUT.title_pad + (6.0 if subtitle else 0.0)
         ax.set_title(
             title,
             fontsize=TYPOGRAPHY.title_size,
@@ -155,56 +149,60 @@ def apply_theme(
             color=TYPOGRAPHY.title_color,
             fontfamily=font_family,
             loc="left",
-            pad=LAYOUT.title_pad,
+            pad=title_pad,
         )
 
-    # --- Subtitle (left-aligned, below title) ---
+    # --- Subtitle (left-aligned, anchored to axes like title) ---
     if subtitle:
-        # Use fig.text for subtitle positioned just below the title
-        ax_pos = ax.get_position()
-        fig.text(
-            ax_pos.x0,
-            ax_pos.y1 + 0.02,
+        ax.text(
+            0.0,
+            1.02,
             subtitle,
+            transform=ax.transAxes,
             fontsize=TYPOGRAPHY.subtitle_size,
             fontweight=TYPOGRAPHY.subtitle_weight,
             color=TYPOGRAPHY.subtitle_color,
             fontfamily=font_family,
             ha="left",
             va="bottom",
-            transform=fig.transFigure,
         )
 
-    # --- Source label (below plot) ---
-    source_text = source or config.source_label
-    if source_text:
-        ax_pos = ax.get_position()
-        fig.text(
-            ax_pos.x0,
-            0.02,
-            f"Source: {source_text}",
-            fontsize=TYPOGRAPHY.source_size,
-            color=TYPOGRAPHY.source_color,
-            fontfamily=font_family,
-            ha="left",
-            va="bottom",
-            transform=fig.transFigure,
-        )
-
-    # --- Note (below source, slightly larger) ---
-    if note:
-        ax_pos = ax.get_position()
-        y_offset = 0.05 if source_text else 0.02
-        fig.text(
-            ax_pos.x0,
-            y_offset,
-            f"Note: {note}",
-            fontsize=TYPOGRAPHY.note_size,
-            color=TYPOGRAPHY.note_color,
-            fontfamily=font_family,
-            ha="left",
-            va="bottom",
-            transform=fig.transFigure,
-        )
-
+    # --- Layout first, then footnotes in reserved space ---
     fig.tight_layout()
+
+    source_text = source or config.source_label
+    has_source = bool(source_text)
+    has_note = bool(note)
+
+    if has_source or has_note:
+        bottom = 0.15 if has_source and has_note else 0.12
+        fig.subplots_adjust(bottom=bottom)
+
+        ax_pos = ax.get_position()
+
+        if has_source:
+            fig.text(
+                ax_pos.x0,
+                0.02,
+                f"Source: {source_text}",
+                fontsize=TYPOGRAPHY.source_size,
+                color=TYPOGRAPHY.source_color,
+                fontfamily=font_family,
+                ha="left",
+                va="bottom",
+                transform=fig.transFigure,
+            )
+
+        if has_note:
+            y_offset = 0.05 if has_source else 0.02
+            fig.text(
+                ax_pos.x0,
+                y_offset,
+                f"Note: {note}",
+                fontsize=TYPOGRAPHY.note_size,
+                color=TYPOGRAPHY.note_color,
+                fontfamily=font_family,
+                ha="left",
+                va="bottom",
+                transform=fig.transFigure,
+            )

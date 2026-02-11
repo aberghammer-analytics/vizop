@@ -13,6 +13,7 @@ class VizopConfig(BaseModel):
     background: Literal["white", "light_gray"] = "white"
     size: Literal["standard", "wide", "tall"] = "standard"
     source_label: str | None = None
+    gridlines: bool = False
 
 
 _config: VizopConfig | None = None

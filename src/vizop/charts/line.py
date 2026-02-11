@@ -29,11 +29,13 @@ def line(
     accent_color: str | None = None,
     palette: str = "default",
     highlight: str | list[str] | None = None,
+    color_map: dict[str, str] | None = None,
     show_area: bool = False,
     zero_baseline: bool = False,
     show_last_value: bool = False,
     highlight_range: tuple[Any, Any] | None = None,
     highlight_range_label: str | None = None,
+    gridlines: bool | None = None,
     size: str | None = None,
 ) -> Chart:
     """Create a line chart from a DataFrame.
@@ -50,11 +52,13 @@ def line(
         accent_color: Override color for single-series line.
         palette: Color palette name for multi-series.
         highlight: Series name(s) to highlight; others are muted.
+        color_map: Dict mapping series names to hex colors. Unmapped series get gray.
         show_area: Fill area under the line (single-series only).
         zero_baseline: Force y-axis to start at 0.
         show_last_value: Show formatted value at the last data point.
         highlight_range: Tuple of (start, end) x-values to shade.
         highlight_range_label: Label for the shaded range.
+        gridlines: Show horizontal gridlines. None falls back to config default.
         size: Override figure size preset.
 
     Returns:
@@ -74,7 +78,12 @@ def line(
 
     # --- Color assignment ---
     colors = _assign_colors(
-        series_names, accent_color=accent_color, palette=palette, highlight=highlight, config=config
+        series_names,
+        accent_color=accent_color,
+        palette=palette,
+        highlight=highlight,
+        color_map=color_map,
+        config=config,
     )
 
     # --- Create figure ---
@@ -86,18 +95,7 @@ def line(
         if is_date:
             start = pd.to_datetime(start)
             end = pd.to_datetime(end)
-        ax.axvspan(start, end, alpha=0.08, color="#cccccc", zorder=0)
-        if highlight_range_label:
-            mid = start + (end - start) / 2 if is_date else (start + end) / 2
-            ax.text(
-                mid,
-                ax.get_ylim()[1],
-                highlight_range_label,
-                ha="center",
-                va="bottom",
-                fontsize=TYPOGRAPHY.label_size,
-                color=TYPOGRAPHY.label_color,
-            )
+        ax.axvspan(start, end, alpha=0.15, color="#b0b0b0", zorder=0)
 
     # --- Determine draw order: muted first, highlighted last ---
     highlight_set = _normalize_highlight(highlight)
@@ -157,24 +155,25 @@ def line(
             start = pd.to_datetime(start)
             end = pd.to_datetime(end)
         mid = start + (end - start) / 2 if is_date else (start + end) / 2
-        y_top = ax.get_ylim()[1]
-        # Remove the earlier text (placed before data, wrong ylim) and re-place
-        for txt in ax.texts[:]:
-            if txt.get_text() == highlight_range_label:
-                txt.remove()
+        y_min, y_top = ax.get_ylim()
+        y_inset = y_top - (y_top - y_min) * 0.02
         ax.text(
             mid,
-            y_top,
+            y_inset,
             highlight_range_label,
             ha="center",
-            va="bottom",
+            va="top",
             fontsize=TYPOGRAPHY.label_size,
             color=TYPOGRAPHY.label_color,
             zorder=5,
         )
 
     # --- Apply theme ---
-    apply_theme(fig, ax, config=config, title=title, subtitle=subtitle, source=source, note=note)
+    show_gridlines = gridlines if gridlines is not None else config.gridlines
+    apply_theme(
+        fig, ax, config=config, title=title, subtitle=subtitle,
+        source=source, note=note, gridlines=show_gridlines,
+    )
 
     return Chart(fig)
 
@@ -269,28 +268,47 @@ def _assign_colors(
     accent_color: str | None,
     palette: str,
     highlight: str | list[str] | None,
+    color_map: dict[str, str] | None = None,
     config: object,
 ) -> dict[str, str]:
     """Map each series name to a color."""
-    highlight_set = _normalize_highlight(highlight)
+    # Warn about unknown keys in color_map
+    if color_map:
+        unknown = set(color_map) - set(series_names)
+        if unknown:
+            warnings.warn(
+                f"color_map contains keys not found in series: {sorted(unknown)}",
+                stacklevel=3,
+            )
 
+    # Single-series: color_map wins over accent_color
     if len(series_names) == 1:
+        name = series_names[0]
+        if color_map and name in color_map:
+            return {name: color_map[name]}
         color = accent_color or getattr(config, "accent_color", "#4E79A7")
-        return {series_names[0]: color}
+        return {name: color}
 
+    # Multi-series with color_map
+    if color_map is not None:
+        return {name: color_map.get(name, HIGHLIGHT_MUTED_COLOR) for name in series_names}
+
+    # Multi-series with highlight only (existing behavior)
+    highlight_set = _normalize_highlight(highlight)
     if highlight_set:
         highlighted = [n for n in series_names if n in highlight_set]
         palette_colors = get_colors(len(highlighted), palette=palette, accent_color=accent_color)
-        color_map: dict[str, str] = {}
+        result: dict[str, str] = {}
         color_idx = 0
         for name in series_names:
             if name in highlight_set:
-                color_map[name] = palette_colors[color_idx]
+                result[name] = palette_colors[color_idx]
                 color_idx += 1
             else:
-                color_map[name] = HIGHLIGHT_MUTED_COLOR
-        return color_map
+                result[name] = HIGHLIGHT_MUTED_COLOR
+        return result
 
+    # Multi-series, no highlight, no color_map
     palette_colors = get_colors(len(series_names), palette=palette, accent_color=accent_color)
     return dict(zip(series_names, palette_colors, strict=False))
 
