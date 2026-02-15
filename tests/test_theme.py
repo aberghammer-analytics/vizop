@@ -78,9 +78,12 @@ class TestApplyTheme:
         fig, ax = plt.subplots()
         ax.plot([1, 2], [1, 2])
         apply_theme(fig, ax, title="Test Title")
-        # loc="left" stores the title in _left_title, not the center title
-        left_title = ax._left_title
-        assert left_title.get_text() == "Test Title"
+        # Title is now a figure-level text object aligned to figure margin
+        fig_texts = [t.get_text() for t in fig.texts]
+        assert "Test Title" in fig_texts
+        # Verify it's aligned to figure margin (ha="left", x=LAYOUT.figure_margin)
+        title_obj = next(t for t in fig.texts if t.get_text() == "Test Title")
+        assert title_obj.get_ha() == "left"
         plt.close(fig)
 
     def test_gridlines_off_by_default(self):

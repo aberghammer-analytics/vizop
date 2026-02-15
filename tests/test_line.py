@@ -8,6 +8,7 @@ import pandas as pd
 import pytest
 
 import vizop
+from vizop import Annotation
 from vizop.charts.line import line
 from vizop.core.chart import Chart
 from vizop.core.config import reset_config
@@ -157,8 +158,9 @@ class TestSingleSeries:
 
     def test_title_and_subtitle(self, single_df):
         chart = line(single_df, x="year", y="gdp", title="My Title", subtitle="My Sub")
-        ax = chart.fig.axes[0]
-        assert ax._left_title.get_text() == "My Title"
+        fig_texts = [t.get_text() for t in chart.fig.texts]
+        assert "My Title" in fig_texts
+        assert "My Sub" in fig_texts
 
 
 # ---------------------------------------------------------------------------
@@ -249,7 +251,10 @@ class TestHighlight:
 class TestColorMap:
     def test_basic_mapping(self, long_df):
         chart = line(
-            long_df, x="year", y="value", group="country",
+            long_df,
+            x="year",
+            y="value",
+            group="country",
             color_map={"US": "#ff0000", "UK": "#0000ff"},
         )
         ax = chart.fig.axes[0]
@@ -261,7 +266,9 @@ class TestColorMap:
 
     def test_unmapped_series_get_gray(self, wide_df):
         chart = line(
-            wide_df, x="year", y=["gdp", "inflation", "unemployment"],
+            wide_df,
+            x="year",
+            y=["gdp", "inflation", "unemployment"],
             color_map={"gdp": "#ff0000"},
         )
         ax = chart.fig.axes[0]
@@ -274,7 +281,10 @@ class TestColorMap:
 
     def test_color_map_with_highlight(self, long_df):
         chart = line(
-            long_df, x="year", y="value", group="country",
+            long_df,
+            x="year",
+            y="value",
+            group="country",
             color_map={"US": "#ff0000", "UK": "#0000ff"},
             highlight="US",
         )
@@ -291,14 +301,20 @@ class TestColorMap:
     def test_warning_on_unknown_keys(self, long_df):
         with pytest.warns(UserWarning, match="color_map contains keys not found"):
             line(
-                long_df, x="year", y="value", group="country",
+                long_df,
+                x="year",
+                y="value",
+                group="country",
                 color_map={"US": "#ff0000", "Mars": "#00ff00"},
             )
 
     def test_single_series_color_map_overrides_accent(self, single_df):
         chart = line(
-            single_df, x="year", y="gdp",
-            accent_color="#999999", color_map={"gdp": "#ff0000"},
+            single_df,
+            x="year",
+            y="gdp",
+            accent_color="#999999",
+            color_map={"gdp": "#ff0000"},
         )
         ax = chart.fig.axes[0]
         color = matplotlib.colors.to_hex(ax.lines[0].get_color())
@@ -374,3 +390,143 @@ class TestThemeIntegration:
         w, h = chart.fig.get_size_inches()
         assert w == pytest.approx(11.0)
         assert h == pytest.approx(5.0)
+
+
+# ---------------------------------------------------------------------------
+# Annotations
+# ---------------------------------------------------------------------------
+
+
+class TestAnnotations:
+    def test_basic_annotation_renders_label(self, single_df):
+        chart = line(
+            single_df,
+            x="year",
+            y="gdp",
+            annotate=[Annotation(x=2022, label="Dip")],
+        )
+        ax = chart.fig.axes[0]
+        texts = [t.get_text() for t in ax.texts]
+        assert "Dip" in texts
+
+    def test_auto_y_lookup(self, single_df):
+        """Annotation with no explicit y should find the value from data."""
+        chart = line(
+            single_df,
+            x="year",
+            y="gdp",
+            annotate=[Annotation(x=2022, label="Dip")],
+        )
+        assert isinstance(chart, Chart)
+
+    def test_explicit_y_override(self, single_df):
+        chart = line(
+            single_df,
+            x="year",
+            y="gdp",
+            annotate=[Annotation(x=2022, y=200.0, label="Target")],
+        )
+        ax = chart.fig.axes[0]
+        texts = [t.get_text() for t in ax.texts]
+        assert "Target" in texts
+
+    def test_multiple_annotations(self, single_df):
+        chart = line(
+            single_df,
+            x="year",
+            y="gdp",
+            annotate=[
+                Annotation(x=2020, label="Start"),
+                Annotation(x=2023, label="End"),
+            ],
+        )
+        ax = chart.fig.axes[0]
+        texts = [t.get_text() for t in ax.texts]
+        assert "Start" in texts
+        assert "End" in texts
+
+    def test_multi_series_with_explicit_series(self, long_df):
+        chart = line(
+            long_df,
+            x="year",
+            y="value",
+            group="country",
+            annotate=[Annotation(x=2022, label="Peak", series="US")],
+        )
+        ax = chart.fig.axes[0]
+        texts = [t.get_text() for t in ax.texts]
+        assert "Peak" in texts
+
+    def test_multi_series_no_series_defaults_with_warning(self, long_df):
+        with pytest.warns(UserWarning, match="no series specified"):
+            chart = line(
+                long_df,
+                x="year",
+                y="value",
+                group="country",
+                annotate=[Annotation(x=2022, label="Point")],
+            )
+        assert isinstance(chart, Chart)
+
+    def test_invalid_series_raises(self, long_df):
+        with pytest.raises(ValueError, match="not found"):
+            line(
+                long_df,
+                x="year",
+                y="value",
+                group="country",
+                annotate=[Annotation(x=2022, label="Bad", series="Mars")],
+            )
+
+    def test_x_out_of_range_raises(self, single_df):
+        with pytest.raises(ValueError, match="too far"):
+            line(
+                single_df,
+                x="year",
+                y="gdp",
+                annotate=[Annotation(x=9999, label="Gone")],
+            )
+
+    def test_empty_list_is_noop(self, single_df):
+        chart = line(single_df, x="year", y="gdp", annotate=[])
+        assert isinstance(chart, Chart)
+
+    def test_connector_forced_on(self, single_df):
+        """connector=True should create extra plot elements (dot marker)."""
+        chart = line(
+            single_df,
+            x="year",
+            y="gdp",
+            annotate=[Annotation(x=2022, label="Here", connector=True)],
+        )
+        ax = chart.fig.axes[0]
+        # Should have the data line + connector dot
+        assert len(ax.lines) >= 2
+
+    def test_connector_forced_off(self, single_df):
+        """connector=False should not create a connector dot."""
+        chart = line(
+            single_df,
+            x="year",
+            y="gdp",
+            annotate=[Annotation(x=2022, label="Here", connector=False)],
+        )
+        ax = chart.fig.axes[0]
+        # Only the data line, no connector dot
+        assert len(ax.lines) == 1
+
+    def test_date_x_annotation(self, date_df):
+        chart = line(
+            date_df,
+            x="date",
+            y="revenue",
+            annotate=[Annotation(x="2020-06-01", label="Mid-year")],
+        )
+        ax = chart.fig.axes[0]
+        texts = [t.get_text() for t in ax.texts]
+        assert "Mid-year" in texts
+
+    def test_annotation_importable_from_vizop(self):
+        """Annotation should be importable directly from vizop."""
+        assert hasattr(vizop, "Annotation")
+        assert vizop.Annotation is Annotation

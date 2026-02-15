@@ -14,6 +14,7 @@ class VizopConfig(BaseModel):
     size: Literal["standard", "wide", "tall"] = "standard"
     source_label: str | None = None
     gridlines: bool = False
+    dpi: int = 300
 
 
 _config: VizopConfig | None = None

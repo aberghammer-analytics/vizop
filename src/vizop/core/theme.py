@@ -6,7 +6,7 @@ via VizopConfig; this module translates config into matplotlib properties.
 
 from typing import TYPE_CHECKING
 
-from matplotlib.ticker import MaxNLocator
+from matplotlib.ticker import FuncFormatter, MaxNLocator
 from pydantic import BaseModel
 
 if TYPE_CHECKING:
@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 
 from vizop.core.config import VizopConfig, get_config
 from vizop.core.fonts import get_font_family, register_fonts
+from vizop.core.formatting import format_value
 
 
 class Typography(BaseModel):
@@ -50,6 +51,7 @@ class Layout(BaseModel):
     title_pad: float = 16.0
     subtitle_pad: float = 8.0
     source_pad: float = 24.0
+    figure_margin: float = 0.025
 
 
 class SizeSpec(BaseModel):
@@ -74,6 +76,12 @@ TYPOGRAPHY = Typography()
 LAYOUT = Layout()
 
 
+def _comma_tick_formatter(value: float, pos: int) -> str:
+    """Format tick labels with commas for values >= 1000."""
+    fmt = "comma" if abs(value) >= 1000 else "plain"
+    return format_value(value, fmt)
+
+
 def apply_theme(
     fig: "Figure",
     ax: "Axes",
@@ -96,9 +104,10 @@ def apply_theme(
     register_fonts()
     font_family = get_font_family(config)
 
-    # --- Figure size and background ---
+    # --- Figure size, DPI, and background ---
     size = SIZES[config.size]
     fig.set_size_inches(size.width, size.height)
+    fig.set_dpi(config.dpi)
     bg_color = BACKGROUND_COLORS[config.background]
     fig.set_facecolor(bg_color)
     ax.set_facecolor(bg_color)
@@ -129,6 +138,11 @@ def apply_theme(
     # --- Y-axis: fewer ticks ---
     ax.yaxis.set_major_locator(MaxNLocator(nbins=5))
 
+    # --- Numeric tick formatting (commas for values >= 1000) ---
+    tick_formatter = FuncFormatter(_comma_tick_formatter)
+    ax.xaxis.set_major_formatter(tick_formatter)
+    ax.yaxis.set_major_formatter(tick_formatter)
+
     # --- Tick styling ---
     ax.tick_params(
         axis="both",
@@ -139,37 +153,64 @@ def apply_theme(
     for label in ax.get_xticklabels() + ax.get_yticklabels():
         label.set_fontfamily(font_family)
 
-    # --- Title (left-aligned) ---
-    if title:
-        title_pad = LAYOUT.title_pad + (6.0 if subtitle else 0.0)
-        ax.set_title(
-            title,
-            fontsize=TYPOGRAPHY.title_size,
-            fontweight=TYPOGRAPHY.title_weight,
-            color=TYPOGRAPHY.title_color,
-            fontfamily=font_family,
-            loc="left",
-            pad=title_pad,
-        )
-
-    # --- Subtitle (left-aligned, anchored to axes like title) ---
-    if subtitle:
-        ax.text(
-            0.0,
-            1.02,
-            subtitle,
-            transform=ax.transAxes,
-            fontsize=TYPOGRAPHY.subtitle_size,
-            fontweight=TYPOGRAPHY.subtitle_weight,
-            color=TYPOGRAPHY.subtitle_color,
-            fontfamily=font_family,
-            ha="left",
-            va="bottom",
-        )
-
-    # --- Layout first, then footnotes in reserved space ---
+    # --- Layout first, then position text elements in reserved space ---
     fig.tight_layout()
 
+    margin = LAYOUT.figure_margin
+    has_title = bool(title)
+    has_subtitle = bool(subtitle)
+
+    # --- Reserve top space for title/subtitle ---
+    if has_title or has_subtitle:
+        fig_height_pts = fig.get_size_inches()[1] * 72
+        top_pad = 4.0 / fig_height_pts
+        element_gap = 6.0 / fig_height_pts
+
+        space_needed = top_pad
+        if has_title:
+            space_needed += TYPOGRAPHY.title_size / fig_height_pts
+        if has_subtitle:
+            space_needed += TYPOGRAPHY.subtitle_size / fig_height_pts
+        if has_title and has_subtitle:
+            space_needed += element_gap
+        space_needed += element_gap  # gap between header and axes
+
+        fig.subplots_adjust(top=1.0 - space_needed)
+
+        y_cursor = 1.0 - top_pad
+
+        if has_title:
+            title_text = fig.text(
+                margin,
+                y_cursor,
+                title,
+                fontsize=TYPOGRAPHY.title_size,
+                fontweight=TYPOGRAPHY.title_weight,
+                color=TYPOGRAPHY.title_color,
+                fontfamily=font_family,
+                ha="left",
+                va="top",
+                transform=fig.transFigure,
+            )
+            title_text._vizop_type = "title"
+            y_cursor -= TYPOGRAPHY.title_size / fig_height_pts + element_gap
+
+        if has_subtitle:
+            subtitle_text = fig.text(
+                margin,
+                y_cursor,
+                subtitle,
+                fontsize=TYPOGRAPHY.subtitle_size,
+                fontweight=TYPOGRAPHY.subtitle_weight,
+                color=TYPOGRAPHY.subtitle_color,
+                fontfamily=font_family,
+                ha="left",
+                va="top",
+                transform=fig.transFigure,
+            )
+            subtitle_text._vizop_type = "subtitle"
+
+    # --- Source and note (left-aligned to figure margin) ---
     source_text = source or config.source_label
     has_source = bool(source_text)
     has_note = bool(note)
@@ -178,11 +219,9 @@ def apply_theme(
         bottom = 0.15 if has_source and has_note else 0.12
         fig.subplots_adjust(bottom=bottom)
 
-        ax_pos = ax.get_position()
-
         if has_source:
             fig.text(
-                ax_pos.x0,
+                margin,
                 0.02,
                 f"Source: {source_text}",
                 fontsize=TYPOGRAPHY.source_size,
@@ -196,7 +235,7 @@ def apply_theme(
         if has_note:
             y_offset = 0.05 if has_source else 0.02
             fig.text(
-                ax_pos.x0,
+                margin,
                 y_offset,
                 f"Note: {note}",
                 fontsize=TYPOGRAPHY.note_size,
@@ -206,3 +245,70 @@ def apply_theme(
                 va="bottom",
                 transform=fig.transFigure,
             )
+
+
+def _adjust_top_spacing_for_legend(fig: "Figure", ax: "Axes") -> None:
+    """Push axes down to make room for a top-positioned legend.
+
+    Title and subtitle are figure-level text (tagged with _vizop_type),
+    so we just need to push the axes top down — the title/subtitle stay put
+    since they're in absolute figure coordinates.
+    """
+    fig_height_pts = fig.get_size_inches()[1] * 72
+    legend_space = (TYPOGRAPHY.label_size + 12.0) / fig_height_pts
+
+    current_top = fig.subplotpars.top
+    fig.subplots_adjust(top=current_top - legend_space)
+
+
+def draw_legend(
+    fig: "Figure",
+    ax: "Axes",
+    labels: list[str],
+    position: str | bool | None,
+) -> None:
+    """Draw a left-aligned legend at the specified position.
+
+    This is the shared legend function for all chart types. Handles
+    subtitle/title spacing adjustments when position is "top".
+
+    Args:
+        fig: The matplotlib Figure.
+        ax: The matplotlib Axes containing labeled artists.
+        labels: Series/group names (used for ncol sizing).
+        position: "top", "bottom", "right", False, or None.
+    """
+    if position is False or position is None:
+        return
+
+    ncol = len(labels)
+
+    if position == "top":
+        _adjust_top_spacing_for_legend(fig, ax)
+        ax_pos = ax.get_position()
+        margin = LAYOUT.figure_margin
+        legend_x = (margin - ax_pos.x0) / ax_pos.width
+        ax.legend(
+            loc="lower left",
+            bbox_to_anchor=(legend_x, 1.0),
+            ncol=ncol,
+            frameon=False,
+            fontsize=TYPOGRAPHY.label_size,
+        )
+    elif position == "bottom":
+        ax.legend(
+            loc="lower left",
+            bbox_to_anchor=(0.0, -0.12),
+            ncol=ncol,
+            frameon=False,
+            fontsize=TYPOGRAPHY.label_size,
+        )
+    elif position == "right":
+        ax.legend(
+            loc="center left",
+            bbox_to_anchor=(1.02, 0.5),
+            ncol=1,
+            frameon=False,
+            fontsize=TYPOGRAPHY.label_size,
+        )
+        fig.subplots_adjust(right=0.82)

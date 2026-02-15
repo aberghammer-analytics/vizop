@@ -7,6 +7,8 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 
+from vizop.core.config import get_config
+
 
 class Chart:
     """Thin wrapper around a matplotlib Figure.
@@ -21,14 +23,18 @@ class Chart:
         """Display the chart interactively."""
         self.fig.show()
 
-    def save(self, path: str | Path, *, dpi: int = 150) -> None:
+    def save(self, path: str | Path, *, dpi: int | None = None) -> None:
         """Save the chart to a file."""
+        if dpi is None:
+            dpi = get_config().dpi
         self.fig.savefig(path, dpi=dpi, bbox_inches="tight")
 
-    def to_base64(self, *, format: str = "png") -> str:
+    def to_base64(self, *, format: str = "png", dpi: int | None = None) -> str:
         """Return the chart as a base64-encoded string."""
+        if dpi is None:
+            dpi = get_config().dpi
         buf = BytesIO()
-        self.fig.savefig(buf, format=format, bbox_inches="tight")
+        self.fig.savefig(buf, format=format, dpi=dpi, bbox_inches="tight")
         buf.seek(0)
         return base64.b64encode(buf.read()).decode("utf-8")
 

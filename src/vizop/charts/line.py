@@ -9,11 +9,17 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+from vizop.core.annotations import (
+    Annotation,
+    place_annotations,
+    render_annotations,
+    resolve_annotations,
+)
 from vizop.core.chart import Chart
 from vizop.core.config import get_config
 from vizop.core.formatting import auto_detect_format, format_value
-from vizop.core.palettes import HIGHLIGHT_MUTED_COLOR, get_colors
-from vizop.core.theme import LAYOUT, TYPOGRAPHY, apply_theme
+from vizop.core.palettes import assign_colors, normalize_highlight
+from vizop.core.theme import BACKGROUND_COLORS, LAYOUT, TYPOGRAPHY, apply_theme
 
 
 def line(
@@ -37,6 +43,7 @@ def line(
     highlight_range_label: str | None = None,
     gridlines: bool | None = None,
     size: str | None = None,
+    annotate: list[Annotation] | None = None,
 ) -> Chart:
     """Create a line chart from a DataFrame.
 
@@ -77,13 +84,13 @@ def line(
     is_date = _is_datetime(data[x])
 
     # --- Color assignment ---
-    colors = _assign_colors(
+    colors = assign_colors(
         series_names,
         accent_color=accent_color,
         palette=palette,
         highlight=highlight,
         color_map=color_map,
-        config=config,
+        config_accent=config.accent_color,
     )
 
     # --- Create figure ---
@@ -98,7 +105,7 @@ def line(
         ax.axvspan(start, end, alpha=0.15, color="#b0b0b0", zorder=0)
 
     # --- Determine draw order: muted first, highlighted last ---
-    highlight_set = _normalize_highlight(highlight)
+    highlight_set = normalize_highlight(highlight)
     muted_names = []
     highlighted_names = []
     if highlight_set and is_multi:
@@ -171,9 +178,22 @@ def line(
     # --- Apply theme ---
     show_gridlines = gridlines if gridlines is not None else config.gridlines
     apply_theme(
-        fig, ax, config=config, title=title, subtitle=subtitle,
-        source=source, note=note, gridlines=show_gridlines,
+        fig,
+        ax,
+        config=config,
+        title=title,
+        subtitle=subtitle,
+        source=source,
+        note=note,
+        gridlines=show_gridlines,
     )
+
+    # --- Annotations ---
+    if annotate:
+        resolved = resolve_annotations(annotate, series_data, is_date)
+        placed = place_annotations(resolved, ax, series_data=series_data)
+        bg_color = BACKGROUND_COLORS.get(config.background, "#ffffff")
+        render_annotations(placed, ax, bg_color=bg_color)
 
     return Chart(fig)
 
@@ -251,66 +271,6 @@ def _is_datetime(series: pd.Series) -> bool:
         return True
     except (ValueError, TypeError):
         return False
-
-
-def _normalize_highlight(highlight: str | list[str] | None) -> set[str]:
-    """Convert highlight param to a set of series names."""
-    if highlight is None:
-        return set()
-    if isinstance(highlight, str):
-        return {highlight}
-    return set(highlight)
-
-
-def _assign_colors(
-    series_names: list[str],
-    *,
-    accent_color: str | None,
-    palette: str,
-    highlight: str | list[str] | None,
-    color_map: dict[str, str] | None = None,
-    config: object,
-) -> dict[str, str]:
-    """Map each series name to a color."""
-    # Warn about unknown keys in color_map
-    if color_map:
-        unknown = set(color_map) - set(series_names)
-        if unknown:
-            warnings.warn(
-                f"color_map contains keys not found in series: {sorted(unknown)}",
-                stacklevel=3,
-            )
-
-    # Single-series: color_map wins over accent_color
-    if len(series_names) == 1:
-        name = series_names[0]
-        if color_map and name in color_map:
-            return {name: color_map[name]}
-        color = accent_color or getattr(config, "accent_color", "#4E79A7")
-        return {name: color}
-
-    # Multi-series with color_map
-    if color_map is not None:
-        return {name: color_map.get(name, HIGHLIGHT_MUTED_COLOR) for name in series_names}
-
-    # Multi-series with highlight only (existing behavior)
-    highlight_set = _normalize_highlight(highlight)
-    if highlight_set:
-        highlighted = [n for n in series_names if n in highlight_set]
-        palette_colors = get_colors(len(highlighted), palette=palette, accent_color=accent_color)
-        result: dict[str, str] = {}
-        color_idx = 0
-        for name in series_names:
-            if name in highlight_set:
-                result[name] = palette_colors[color_idx]
-                color_idx += 1
-            else:
-                result[name] = HIGHLIGHT_MUTED_COLOR
-        return result
-
-    # Multi-series, no highlight, no color_map
-    palette_colors = get_colors(len(series_names), palette=palette, accent_color=accent_color)
-    return dict(zip(series_names, palette_colors, strict=False))
 
 
 def _draw_endpoint_labels(
