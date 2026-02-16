@@ -65,6 +65,7 @@ SIZES: dict[str, SizeSpec] = {
     "standard": SizeSpec(width=8.0, height=5.5),
     "wide": SizeSpec(width=11.0, height=5.0),
     "tall": SizeSpec(width=7.0, height=8.0),
+    "square": SizeSpec(width=7.0, height=7.0),
 }
 
 BACKGROUND_COLORS: dict[str, str] = {
@@ -268,6 +269,7 @@ def draw_legend(
     ax: "Axes",
     labels: list[str],
     position: str | bool | None,
+    handles: list | None = None,
 ) -> None:
     """Draw a left-aligned legend at the specified position.
 
@@ -279,11 +281,15 @@ def draw_legend(
         ax: The matplotlib Axes containing labeled artists.
         labels: Series/group names (used for ncol sizing).
         position: "top", "bottom", "right", False, or None.
+        handles: Explicit legend handles. When None, uses labeled artists on *ax*.
     """
     if position is False or position is None:
         return
 
     ncol = len(labels)
+    handle_kwargs: dict = {}
+    if handles is not None:
+        handle_kwargs["handles"] = handles
 
     if position == "top":
         _adjust_top_spacing_for_legend(fig, ax)
@@ -292,10 +298,14 @@ def draw_legend(
         legend_x = (margin - ax_pos.x0) / ax_pos.width
         ax.legend(
             loc="lower left",
-            bbox_to_anchor=(legend_x, 1.0),
+            bbox_to_anchor=(legend_x, 1.02),
             ncol=ncol,
             frameon=False,
             fontsize=TYPOGRAPHY.label_size,
+            borderpad=0.0,
+            borderaxespad=0.2,
+            handlelength=2.0,
+            **handle_kwargs,
         )
     elif position == "bottom":
         ax.legend(
@@ -304,6 +314,7 @@ def draw_legend(
             ncol=ncol,
             frameon=False,
             fontsize=TYPOGRAPHY.label_size,
+            **handle_kwargs,
         )
     elif position == "right":
         ax.legend(
@@ -312,5 +323,6 @@ def draw_legend(
             ncol=1,
             frameon=False,
             fontsize=TYPOGRAPHY.label_size,
+            **handle_kwargs,
         )
         fig.subplots_adjust(right=0.82)

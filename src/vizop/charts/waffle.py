@@ -133,6 +133,7 @@ def waffle(
     ax.set_xlim(-0.5, grid_size - 0.5)
     ax.set_ylim(-0.5, grid_size - 0.5)
     ax.set_aspect("equal")
+    ax.set_anchor("W")
     ax.axis("off")
 
     # --- Apply theme (title/subtitle/source/background) ---
@@ -157,10 +158,11 @@ def waffle(
 
     # --- Legend ---
     if legend is not False and legend is not None and len(cat_names) > 1:
-        # Create proxy artists for legend
-        for name in cat_names:
-            ax.plot([], [], "s", color=colors[name], label=name, markersize=8)
-        draw_legend(fig, ax, cat_names, legend)
+        handles = [
+            mpatches.Rectangle((0, 0), 1, 1, facecolor=colors[name], edgecolor="none", label=name)
+            for name in cat_names
+        ]
+        draw_legend(fig, ax, cat_names, legend, handles=handles)
 
     return Chart(fig)
 
