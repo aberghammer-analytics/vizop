@@ -16,6 +16,8 @@ class Chart:
     Provides show(), save(), and to_base64() for convenient output.
     """
 
+    DISPLAY_DPI: int = 100
+
     def __init__(self, fig: Figure) -> None:
         self.fig = fig
 
@@ -37,6 +39,13 @@ class Chart:
         self.fig.savefig(buf, format=format, dpi=dpi, bbox_inches="tight")
         buf.seek(0)
         return base64.b64encode(buf.read()).decode("utf-8")
+
+    def _repr_png_(self) -> bytes:
+        """Render as PNG for Jupyter notebook inline display."""
+        buf = BytesIO()
+        self.fig.savefig(buf, format="png", dpi=self.DISPLAY_DPI, bbox_inches="tight")
+        buf.seek(0)
+        return buf.read()
 
     def close(self) -> None:
         """Close the underlying matplotlib figure."""

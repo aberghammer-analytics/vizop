@@ -104,10 +104,12 @@ def apply_theme(
     register_fonts()
     font_family = get_font_family(config)
 
-    # --- Figure size, DPI, and background ---
+    # --- Figure size and background ---
+    # DPI is NOT set here — the figure stays at matplotlib's default (100)
+    # so Jupyter inline display renders at standard size. High-res DPI is
+    # applied only at save time via Chart.save()/to_base64().
     size = SIZES[config.size]
     fig.set_size_inches(size.width, size.height)
-    fig.set_dpi(config.dpi)
     bg_color = BACKGROUND_COLORS[config.background]
     fig.set_facecolor(bg_color)
     ax.set_facecolor(bg_color)

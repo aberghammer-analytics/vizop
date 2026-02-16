@@ -11,7 +11,7 @@ matplotlib.use("Agg")
 
 class TestConstants:
     def test_sizes_contains_all_presets(self):
-        assert set(SIZES.keys()) == {"standard", "wide", "tall"}
+        assert set(SIZES.keys()) == {"standard", "wide", "tall", "square"}
 
     def test_standard_size_dimensions(self):
         assert SIZES["standard"].width == 8.0
