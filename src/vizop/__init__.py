@@ -2,6 +2,7 @@
 
 from vizop.charts.bar import bar
 from vizop.charts.line import line
+from vizop.charts.scatter import scatter
 from vizop.charts.waffle import waffle
 from vizop.core.annotations import Annotation
 from vizop.core.chart import Chart
@@ -17,5 +18,6 @@ __all__ = [
     "configure",
     "get_config",
     "line",
+    "scatter",
     "waffle",
 ]
