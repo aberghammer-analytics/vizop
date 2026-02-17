@@ -305,6 +305,7 @@ def draw_legend(
             borderpad=0.0,
             borderaxespad=0.2,
             handlelength=2.0,
+            columnspacing=1.0,
             **handle_kwargs,
         )
     elif position == "bottom":
@@ -314,6 +315,7 @@ def draw_legend(
             ncol=ncol,
             frameon=False,
             fontsize=TYPOGRAPHY.label_size,
+            columnspacing=1.0,
             **handle_kwargs,
         )
     elif position == "right":
