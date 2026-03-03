@@ -44,3 +44,4 @@ docs/
 .claude/
 output.png
 output*.png
+.playwright-mcp/

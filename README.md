@@ -14,16 +14,16 @@ vizop produces clean, presentation-ready charts inspired by the visual style of 
 
 <table>
 <tr>
-<td align="center"><a href="#line-chart"><img src="docs/images/line_basic.png" width="200"/><br/><b>Line</b></a></td>
-<td align="center"><a href="#bar-chart"><img src="docs/images/bar_basic.png" width="200"/><br/><b>Bar</b></a></td>
-<td align="center"><a href="#scatter-plot"><img src="docs/images/scatter_basic.png" width="200"/><br/><b>Scatter</b></a></td>
-<td align="center"><a href="#slope-chart"><img src="docs/images/slope_basic.png" width="200"/><br/><b>Slope</b></a></td>
+<td align="center"><a href="#line-chart"><img src="images/line_basic.png" width="200"/><br/><b>Line</b></a></td>
+<td align="center"><a href="#bar-chart"><img src="images/bar_basic.png" width="200"/><br/><b>Bar</b></a></td>
+<td align="center"><a href="#scatter-plot"><img src="images/scatter_basic.png" width="200"/><br/><b>Scatter</b></a></td>
+<td align="center"><a href="#slope-chart"><img src="images/slope_basic.png" width="200"/><br/><b>Slope</b></a></td>
 </tr>
 <tr>
-<td align="center"><a href="#waffle-chart"><img src="docs/images/waffle_basic.png" width="200"/><br/><b>Waffle</b></a></td>
-<td align="center"><a href="#raincloud-plot"><img src="docs/images/raincloud_basic.png" width="200"/><br/><b>Raincloud</b></a></td>
-<td align="center"><a href="#parliament-chart"><img src="docs/images/parliament_basic.png" width="200"/><br/><b>Parliament</b></a></td>
-<td align="center"><a href="#bump-chart"><img src="docs/images/bump_basic.png" width="200"/><br/><b>Bump</b></a></td>
+<td align="center"><a href="#waffle-chart"><img src="images/waffle_basic.png" width="200"/><br/><b>Waffle</b></a></td>
+<td align="center"><a href="#raincloud-plot"><img src="images/raincloud_basic.png" width="200"/><br/><b>Raincloud</b></a></td>
+<td align="center"><a href="#parliament-chart"><img src="images/parliament_basic.png" width="200"/><br/><b>Parliament</b></a></td>
+<td align="center"><a href="#bump-chart"><img src="images/bump_basic.png" width="200"/><br/><b>Bump</b></a></td>
 </tr>
 </table>
 
@@ -65,7 +65,7 @@ chart = vizop.line(
 chart.show()
 ```
 
-<img src="docs/images/quickstart.png" width="600"/>
+<img src="images/quickstart.png" width="600"/>
 
 Every chart function returns a `Chart` object — call `.show()` to display, `.save("file.png")` to export, or just let it render inline in Jupyter.
 
@@ -92,7 +92,7 @@ vizop.line(
 )
 ```
 
-<img src="docs/images/line_basic.png" width="600"/>
+<img src="images/line_basic.png" width="600"/>
 
 Multi-series with highlight — the highlighted series stays vivid while others are muted. Labels appear at line endpoints instead of a legend box:
 
@@ -106,7 +106,7 @@ vizop.line(
 )
 ```
 
-<img src="docs/images/line_multi.png" width="600"/>
+<img src="images/line_multi.png" width="600"/>
 
 #### Key Parameters
 
@@ -142,7 +142,7 @@ vizop.bar(
 )
 ```
 
-<img src="docs/images/bar_basic.png" width="600"/>
+<img src="images/bar_basic.png" width="600"/>
 
 Grouped bars for comparing across categories:
 
@@ -156,7 +156,7 @@ vizop.bar(
 )
 ```
 
-<img src="docs/images/bar_grouped.png" width="600"/>
+<img src="images/bar_grouped.png" width="600"/>
 
 #### Key Parameters
 
@@ -186,7 +186,7 @@ vizop.scatter(
 )
 ```
 
-<img src="docs/images/scatter_basic.png" width="600"/>
+<img src="images/scatter_basic.png" width="600"/>
 
 Grouped scatter with highlight:
 
@@ -200,7 +200,7 @@ vizop.scatter(
 )
 ```
 
-<img src="docs/images/scatter_groups.png" width="600"/>
+<img src="images/scatter_groups.png" width="600"/>
 
 #### Key Parameters
 
@@ -239,7 +239,7 @@ vizop.slope(
 )
 ```
 
-<img src="docs/images/slope_basic.png" width="600"/>
+<img src="images/slope_basic.png" width="600"/>
 
 #### Key Parameters
 
@@ -268,7 +268,7 @@ vizop.waffle(
 )
 ```
 
-<img src="docs/images/waffle_basic.png" width="600"/>
+<img src="images/waffle_basic.png" width="600"/>
 
 #### Key Parameters
 
@@ -295,7 +295,7 @@ vizop.raincloud(
 )
 ```
 
-<img src="docs/images/raincloud_basic.png" width="600"/>
+<img src="images/raincloud_basic.png" width="600"/>
 
 #### Key Parameters
 
@@ -325,7 +325,7 @@ vizop.parliament(
 )
 ```
 
-<img src="docs/images/parliament_basic.png" width="600"/>
+<img src="images/parliament_basic.png" width="600"/>
 
 #### Key Parameters
 
@@ -354,7 +354,7 @@ vizop.bump(
 )
 ```
 
-<img src="docs/images/bump_basic.png" width="600"/>
+<img src="images/bump_basic.png" width="600"/>
 
 #### Key Parameters
 
@@ -384,11 +384,11 @@ vizop.configure(
 
 **Before** (defaults):
 
-<img src="docs/images/config_before.png" width="500"/>
+<img src="images/config_before.png" width="500"/>
 
 **After** configure:
 
-<img src="docs/images/config_after.png" width="500"/>
+<img src="images/config_after.png" width="500"/>
 
 | Setting | Type | Default | Description |
 |---|---|---|---|
