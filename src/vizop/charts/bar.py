@@ -516,8 +516,7 @@ def _draw_value_labels(
 
             if is_horizontal:
                 bar_px = abs(
-                    ax.transData.transform((value, 0))[0]
-                    - ax.transData.transform((0, 0))[0]
+                    ax.transData.transform((value, 0))[0] - ax.transData.transform((0, 0))[0]
                 )
                 fits_inside = bar_px > text_bbox.width * 1.5
                 bar_center = (
@@ -568,8 +567,7 @@ def _draw_value_labels(
                     )
             else:
                 bar_px = abs(
-                    ax.transData.transform((0, value))[1]
-                    - ax.transData.transform((0, 0))[1]
+                    ax.transData.transform((0, value))[1] - ax.transData.transform((0, 0))[1]
                 )
                 fits_inside = bar_px > text_bbox.height * 1.5
                 bar_center = (

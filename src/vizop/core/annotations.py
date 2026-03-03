@@ -419,9 +419,7 @@ def place_annotations(
 
         for cx, cy in candidates:
             # Label-to-label overlap
-            label_overlap = _compute_overlap(
-                placed, i, cx, cy, label_width_pt, label_height_pt, ax
-            )
+            label_overlap = _compute_overlap(placed, i, cx, cy, label_width_pt, label_height_pt, ax)
 
             # --- Layer 2: line-aware overlap ---
             line_overlap = 0.0

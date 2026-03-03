@@ -175,15 +175,11 @@ def _validate(
     value_cols = [value] if isinstance(value, str) else value
     for col in value_cols:
         if col not in data.columns:
-            raise ValueError(
-                f"Column '{col}' not found in DataFrame. Available: {available_str}"
-            )
+            raise ValueError(f"Column '{col}' not found in DataFrame. Available: {available_str}")
 
     if group is not None:
         if group not in data.columns:
-            raise ValueError(
-                f"Column '{group}' not found in DataFrame. Available: {available_str}"
-            )
+            raise ValueError(f"Column '{group}' not found in DataFrame. Available: {available_str}")
         if isinstance(value, list):
             raise ValueError(
                 "Cannot use both value as a list and group. "

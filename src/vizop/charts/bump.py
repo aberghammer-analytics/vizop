@@ -345,12 +345,14 @@ def _draw_labels(
     for name, ranks in ranked_data.items():
         final_rank = ranks[-1]
         text = f"{name} #{int(final_rank)}" if show_rank else name
-        right_labels.append({
-            "name": name,
-            "y": final_rank,
-            "text": text,
-            "color": colors[name],
-        })
+        right_labels.append(
+            {
+                "name": name,
+                "y": final_rank,
+                "text": text,
+                "color": colors[name],
+            }
+        )
 
     # Sort by rank (ascending since rank 1 is at top)
     right_labels.sort(key=lambda lb: lb["y"])

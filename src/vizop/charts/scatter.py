@@ -235,9 +235,7 @@ def _validate(
         raise ValueError(f"Column '{label}' not found in DataFrame. Available: {available_str}")
 
     if trend is not None and trend not in ("linear", "lowess"):
-        raise ValueError(
-            f"Invalid trend '{trend}'. Must be None, 'linear', or 'lowess'."
-        )
+        raise ValueError(f"Invalid trend '{trend}'. Must be None, 'linear', or 'lowess'.")
 
     if legend is not None and legend is not False and legend not in ("top", "bottom", "right"):
         raise ValueError(

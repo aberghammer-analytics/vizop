@@ -86,7 +86,7 @@ def waffle(
     cat_values = _merge_categories(cat_values)
 
     # --- Normalize to grid cells ---
-    total_cells = grid_size ** 2
+    total_cells = grid_size**2
     cell_counts = _normalize_largest_remainder(cat_values, total_cells)
 
     # --- Color assignment ---
@@ -210,9 +210,7 @@ def _validate(
                 f"Column '{category}' not found in DataFrame. Available: {available_str}"
             )
         if value not in data.columns:
-            raise ValueError(
-                f"Column '{value}' not found in DataFrame. Available: {available_str}"
-            )
+            raise ValueError(f"Column '{value}' not found in DataFrame. Available: {available_str}")
 
     if has_dict:
         if not values:
@@ -271,9 +269,7 @@ def _merge_categories(cat_values: dict[str, float]) -> dict[str, float]:
     return result
 
 
-def _normalize_largest_remainder(
-    cat_values: dict[str, float], total_cells: int
-) -> dict[str, int]:
+def _normalize_largest_remainder(cat_values: dict[str, float], total_cells: int) -> dict[str, int]:
     """Allocate cells to categories using the largest remainder method.
 
     Guarantees the sum of allocated cells equals total_cells exactly.
