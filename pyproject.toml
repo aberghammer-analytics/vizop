@@ -1,6 +1,6 @@
 [project]
 name = "vizop"
-version = "0.1.0"
+version = "0.1.1"
 description = "Opinionated Python data visualization. Publication-quality charts with minimal config."
 readme = "README.md"
 authors = [
@@ -28,9 +28,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/aberghammer/vizop"
-Source = "https://github.com/aberghammer/vizop"
-Issues = "https://github.com/aberghammer/vizop/issues"
+Homepage = "https://github.com/aberghammer-analytics/vizop"
+Source = "https://github.com/aberghammer-analytics/vizop"
+Issues = "https://github.com/aberghammer-analytics/vizop/issues"
 
 [dependency-groups]
 dev = [
