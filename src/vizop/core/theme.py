@@ -49,7 +49,7 @@ class Layout(BaseModel):
     bar_width: float = 0.7
     point_size: float = 40.0
     title_pad: float = 16.0
-    subtitle_pad: float = 8.0
+    subtitle_pad: float = 14.0
     source_pad: float = 24.0
     figure_margin: float = 0.025
 
@@ -93,6 +93,7 @@ def apply_theme(
     source: str | None = None,
     note: str | None = None,
     gridlines: bool = False,
+    skip_y_locator: bool = False,
 ) -> None:
     """Apply vizop's opinionated theme to a matplotlib figure and axes.
 
@@ -138,13 +139,15 @@ def apply_theme(
 
     ax.set_axisbelow(True)
 
-    # --- Y-axis: fewer ticks ---
-    ax.yaxis.set_major_locator(MaxNLocator(nbins=5))
+    # --- Y-axis: fewer ticks (skip for categorical axes like raincloud) ---
+    if not skip_y_locator:
+        ax.yaxis.set_major_locator(MaxNLocator(nbins=5))
 
     # --- Numeric tick formatting (commas for values >= 1000) ---
     tick_formatter = FuncFormatter(_comma_tick_formatter)
     ax.xaxis.set_major_formatter(tick_formatter)
-    ax.yaxis.set_major_formatter(tick_formatter)
+    if not skip_y_locator:
+        ax.yaxis.set_major_formatter(tick_formatter)
 
     # --- Tick styling ---
     ax.tick_params(
@@ -176,7 +179,7 @@ def apply_theme(
             space_needed += TYPOGRAPHY.subtitle_size / fig_height_pts
         if has_title and has_subtitle:
             space_needed += element_gap
-        space_needed += element_gap  # gap between header and axes
+        space_needed += LAYOUT.subtitle_pad / fig_height_pts  # gap between header and axes
 
         fig.subplots_adjust(top=1.0 - space_needed)
 
@@ -250,6 +253,26 @@ def apply_theme(
             )
 
 
+def _find_header_bottom(fig: "Figure") -> float:
+    """Return the bottom y-coordinate (figure fraction) of the lowest header text.
+
+    Scans fig.texts for objects tagged with ``_vizop_type`` ("title" or
+    "subtitle") set by ``apply_theme``.  Since all headers use ``va="top"``,
+    the bottom edge is ``position_y - font_size / fig_height_pts``.
+
+    Falls back to ``1.0`` when no tagged headers are found.
+    """
+    fig_height_pts = fig.get_size_inches()[1] * 72
+    lowest = 1.0
+    for txt in fig.texts:
+        if getattr(txt, "_vizop_type", None) in ("title", "subtitle"):
+            top_y = txt.get_position()[1]
+            font_pts = txt.get_fontsize()
+            bottom_y = top_y - font_pts / fig_height_pts
+            lowest = min(lowest, bottom_y)
+    return lowest
+
+
 def _adjust_top_spacing_for_legend(fig: "Figure", ax: "Axes") -> None:
     """Push axes down to make room for a top-positioned legend.
 
@@ -258,7 +281,7 @@ def _adjust_top_spacing_for_legend(fig: "Figure", ax: "Axes") -> None:
     since they're in absolute figure coordinates.
     """
     fig_height_pts = fig.get_size_inches()[1] * 72
-    legend_space = (TYPOGRAPHY.label_size + 12.0) / fig_height_pts
+    legend_space = (TYPOGRAPHY.label_size + 4.0) / fig_height_pts
 
     current_top = fig.subplotpars.top
     fig.subplots_adjust(top=current_top - legend_space)
@@ -295,15 +318,24 @@ def draw_legend(
         _adjust_top_spacing_for_legend(fig, ax)
         ax_pos = ax.get_position()
         margin = LAYOUT.figure_margin
+
+        # Place legend tight below the subtitle (6pt gap)
+        fig_height_pts = fig.get_size_inches()[1] * 72
+        header_bottom = _find_header_bottom(fig)
+        legend_top_y = header_bottom - 6.0 / fig_height_pts
+
+        # Convert figure coords to axes coords
+        legend_y_axes = (legend_top_y - ax_pos.y0) / ax_pos.height
         legend_x = (margin - ax_pos.x0) / ax_pos.width
+
         ax.legend(
-            loc="lower left",
-            bbox_to_anchor=(legend_x, 1.02),
+            loc="upper left",
+            bbox_to_anchor=(legend_x, legend_y_axes),
             ncol=ncol,
             frameon=False,
             fontsize=TYPOGRAPHY.label_size,
             borderpad=0.0,
-            borderaxespad=0.2,
+            borderaxespad=0.0,
             handlelength=2.0,
             columnspacing=1.0,
             **handle_kwargs,

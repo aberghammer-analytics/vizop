@@ -7,12 +7,30 @@ authors = [
     { name = "Anthony Berghammer", email = "aberghammer.analytics@gmail.com" }
 ]
 requires-python = ">=3.10"
+license = {text = "MIT"}
+keywords = ["visualization", "charts", "matplotlib", "data-viz", "publication-quality"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Visualization",
+]
 dependencies = [
     "matplotlib",
     "pydantic",
     "numpy",
     "pandas",
+    "scipy",
 ]
+
+[project.urls]
+Homepage = "https://github.com/aberghammer/vizop"
+Source = "https://github.com/aberghammer/vizop"
+Issues = "https://github.com/aberghammer/vizop/issues"
 
 [dependency-groups]
 dev = [
