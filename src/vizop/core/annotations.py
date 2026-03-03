@@ -205,7 +205,7 @@ def _find_point_index(
     y_vals: np.ndarray,
 ) -> int:
     """Find the index of a data point in the series arrays."""
-    for i, (xv, yv) in enumerate(zip(x_vals, y_vals)):
+    for i, (xv, yv) in enumerate(zip(x_vals, y_vals, strict=True)):
         if not np.isclose(float(yv), data_y, rtol=1e-9):
             continue
         if isinstance(data_x, (pd.Timestamp, np.datetime64)):
@@ -249,7 +249,6 @@ def _detect_preferred_direction(
 
     # Use a fraction of the local range as a threshold so tiny wiggles
     # don't trigger peak/valley classification
-    local_range = max(abs(data_y - y_prev), abs(data_y - y_next), 1e-9)
     y_range = float(np.ptp(y_vals)) if len(y_vals) > 1 else 1.0
     threshold = y_range * 0.02  # 2% of total series range
 
@@ -290,7 +289,7 @@ def _series_to_display(
         points = np.array(
             [
                 ax.transData.transform((_to_display_x(xv), float(yv)))
-                for xv, yv in zip(x_vals, y_vals)
+                for xv, yv in zip(x_vals, y_vals, strict=True)
             ]
         )
         display_lines.append(points)
